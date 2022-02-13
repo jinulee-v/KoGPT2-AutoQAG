@@ -1,0 +1,13 @@
+# Download KoGPT2 cache
+~
+cache
+
+# Raw data folder
+raw_data
+
+# Products of each train run
+checkpoint
+runs
+
+# Etc.
+__pycache__
