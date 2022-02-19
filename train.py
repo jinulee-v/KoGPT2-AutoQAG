@@ -70,7 +70,8 @@ def main(epoch, save_path, load_path, samples, data_file_path, batch_size, updat
 	else:
 		# 불러오기 부분
 		try:
-			model = AutoModelForCausalLM.from_pretrained(load_path)
+			model = AutoModelForCausalLM.from_pretrained("skt/kogpt2-base-v2", cache_dir=cachedir)
+			model.load_state_dict(torch.load(load_path)["model_state_dict"])
 			count = int(re.findall("\d+", load_path)[1])
 		except:
 			exit()
@@ -110,7 +111,7 @@ def main(epoch, save_path, load_path, samples, data_file_path, batch_size, updat
 			try:
 				outputs = model(data, labels=data)
 				loss, logits = outputs[:2]
-				loss = loss.to(device) + additional_loss(logits).to(device)
+				loss = loss.to(device)
 				loss.backward()
 			except RuntimeError as e:
 					if 'out of memory' in str(e):
