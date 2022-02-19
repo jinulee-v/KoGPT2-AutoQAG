@@ -23,22 +23,26 @@ class ReadDataset(Dataset):
 		answer_token = tokenizer.get_vocab()["<unused1>"]
 		eos_token = tokenizer.get_vocab()[tokenizer.eos_token]
 		for line in tqdm(datasets):
+			# DEBUG
 			if print_first:
 				tqdm.write("First line of data:")
 				tqdm.write(str(line))
+			
+			# Parse TSV
 			line = line.split("\t")
+			# Error: question-answer pair does not exist or pair doesnt match properly
+			if len(line) == 1:
+				continue
+			if len(line) % 2 != 1:
+				continue
+
+			# Run sentencepiece
 			tokenized_lines = tokenizer(line)["input_ids"]
+
 			# BOS
 			index_of_words = [bos_token]
 			# Context
 			index_of_words += tokenized_lines[0]
-			if len(tokenized_lines) == 1:
-				tqdm.write("Error: No question-answer pair is detected")
-				continue
-			if len(tokenized_lines) % 2 != 1:
-				tqdm.write("Error: question and answer pair is not properly matched")
-				tqdm.write(str(line))
-				continue
 			for i in range(1, len(line), 2):
 				# Question...
 				index_of_words += [question_token]
@@ -47,14 +51,20 @@ class ReadDataset(Dataset):
 				index_of_words += [answer_token]
 				index_of_words += tokenized_lines[i+1]
 			index_of_words += [eos_token]
+
+			# Too long sequence to encode at once
 			if len(index_of_words) > 1000:
 				continue
+
+			# DEBUG
 			if print_first:
 				tqdm.write("...is tokenized to:")
 				tqdm.write(str(index_of_words))
+			print_first = False
+			
+			# Tensorize and append to list
 			index_of_words = torch.tensor(index_of_words, dtype=torch.long)
 			self.data.append(index_of_words)
-			print_first = False
 		print("Finished!")
 		print("Total valid data:", len(self.data))
 
