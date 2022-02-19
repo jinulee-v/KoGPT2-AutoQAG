@@ -5,7 +5,7 @@ from torch.nn.utils.rnn import pad_sequence
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from kogpt2.sample import sample_sequence
 from kogpt2.data import ReadDataset
-from kogpt2.loss import *
+from kogpt2.loss import lossQAG
 from tqdm import tqdm
 import subprocess
 import os
@@ -91,7 +91,6 @@ def main(epoch, save_path, load_path, samples, data_file_path, batch_size, updat
 
 
 	learning_rate = 3e-3
-	criterion = torch.nn.CrossEntropyLoss()
 	optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 	optimizer.zero_grad()
 
@@ -110,8 +109,8 @@ def main(epoch, save_path, load_path, samples, data_file_path, batch_size, updat
 
 			try:
 				outputs = model(data, labels=data)
-				loss, logits = outputs[:2]
-				loss = loss.to(device)
+				logits = outputs.logits
+				loss = lossQAG(data, logits, ["question_gen_loss"])
 				loss.backward()
 			except RuntimeError as e:
 					if 'out of memory' in str(e):

@@ -32,6 +32,9 @@ class ReadDataset(Dataset):
 			index_of_words = [bos_token]
 			# Context
 			index_of_words += tokenized_lines[0]
+			if len(tokenized_lines) == 1:
+				tqdm.write("Error: No question-answer pair is detected")
+				continue
 			if len(tokenized_lines) % 2 != 1:
 				tqdm.write("Error: question and answer pair is not properly matched")
 				tqdm.write(str(line))
@@ -53,6 +56,7 @@ class ReadDataset(Dataset):
 			self.data.append(index_of_words)
 			print_first = False
 		print("Finished!")
+		print("Total valid data:", len(self.data))
 
 	def __len__(self):
 		return len(self.data)
