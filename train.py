@@ -32,26 +32,6 @@ parser.add_argument('--update_freq', type=int, default=128,
 args = parser.parse_args()
 
 
-
-def get_gpu_memory_map():
-	"""Get the current gpu usage.
-
-	Returns
-	-------
-	usage: dict
-		Keys are device ids as integers.
-		Values are memory usage as integers in MB.
-	"""
-	result = subprocess.check_output(
-		[
-			'nvidia-smi', '--query-gpu=memory.used',
-			'--format=csv,nounits,noheader'
-		], encoding='utf-8')
-	# Convert lines into a dictionary
-	gpu_memory = [int(x) for x in result.strip().split('\n')]
-	gpu_memory_map = dict(zip(range(len(gpu_memory)), gpu_memory))
-	return gpu_memory_map
-
 def main(epoch, save_path, load_path, samples, data_file_path, batch_size, update_freq):
 	ctx = 'cuda'
 	cachedir = 'cache/'
@@ -110,7 +90,7 @@ def main(epoch, save_path, load_path, samples, data_file_path, batch_size, updat
 			try:
 				outputs = model(data, labels=data)
 				logits = outputs.logits
-				loss = lossQAG(data, logits, ["question_gen_loss"])
+				loss = lossQAG(data, logits, {"question_gen_loss": 1, "answer_in_context_loss": 1})
 				loss.backward()
 			except RuntimeError as e:
 					if 'out of memory' in str(e):
@@ -148,7 +128,7 @@ def main(epoch, save_path, load_path, samples, data_file_path, batch_size, updat
 			# generator test
 			if (update_count == 0 and count > 0 and count % 100 == 0) or (len(data) < batch_size):
 				test_sent = "행정안전부장관은 매년 18세가 되는 남성에 대하여 병역준비역 편입자의 조사에 필요한 주민등록 정보화자료를 병무청장에게 통보하여야 한다. 병무청장은 주민등록이 되어 있지 아니한 사람 등에 대한 병역준비역 편입자 조사를 위하여 법원행정처장에게 매년 18세가 되는 남성의 가족관계등록 정보화자료를 요청할 수 있다. 제1항에 따른 정보화자료 통보의 범위 및 절차 등에 필요한 사항과 병역준비역 편입자로서 국외출생(國外出生) 등의 사유로 주민등록이 되어 있지 아니한 사람의 조사 등에 필요한 사항은 대통령령으로 정한다. 제1항에 따른 병역준비역 편입자의 조사에 필요한 사항은 병무청장이 정한다."
-				sent = sample_sequence(model, tokenizer, tokenizer.get_vocab(), sent=test_sent, text_size=100, temperature=0.7, top_p=0.8, top_k=40)
+				sent = sample_sequence(model, tokenizer, tokenizer.get_vocab(), sent=test_sent, text_size=1024, temperature=0.7, top_p=0.8, top_k=40)
 				tqdm.write(sent)
 
 			#########################################
